@@ -7,6 +7,9 @@ Curated, long-lived notes. Daily raw logs live in `memory/YYYY-MM-DD.md`.
 - Current status as of today: STS/MTS confirmed implemented; LTS scaffolding exists locally (was noted as uncommitted at the time of writing).
 - Reference doc pushed: `docs/rewind-native-imessage-reminders-plan.md` (repo: `rewind/rust-native`, commit `04df1dc`).
 
+## iOS app feature ideas (2026-02-21)
+- Investigate `dnakov/litter` ("litter (codex-ios)") as a reference implementation: iOS client for Codex with both remote-only mode and an optional on-device Rust bridge packaged as an xcframework. Potentially reusable architecture/patterns for our iOS app.
+
 ## Ops / reliability practices (2026-02-21)
 - Cron reliability: failing isolated cron jobs were patched to use model `openai-codex/gpt-5.3-codex`; disk maintenance jobs normalized.
 - Model availability note: `zai/glm-4.7` unusable (subscription over). `nvidia/moonshotai/kimi-k2.5` also not working in practice. Prefer Anthropic Sonnet + Google Gemini as fallbacks.
