@@ -1,7 +1,6 @@
 # University Course Management System — ERD
 
 ---
-
 ## 1) Entities & Attributes (with attribute types)
 
 Legend:
