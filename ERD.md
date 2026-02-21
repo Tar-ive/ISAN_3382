@@ -30,12 +30,43 @@ Legend:
 
 ### 1.3 Relationship / associative entities (M:N resolution)
 
-| Associative entity | Primary Key | Foreign Keys | Relationship captured | Relationship attributes / notes |
-|---|---|---|---|---|
-| Enrollment | enrollment_id | student_uuid → Student; offering_id → CourseOffering | Student **M:N** CourseOffering | status (enrolled/waitlisted/dropped), grading_basis, units_taken, enrolled_at, dropped_at, final_grade; rule: unique (student_uuid, offering_id) |
-| TeachingAssignment | teaching_assignment_id | instructor_uuid → Instructor; offering_id → CourseOffering | Instructor **M:N** CourseOffering | role (instructor_of_record/co-instructor/TA), percent_responsibility |
-| CoursePrerequisite | prereq_id | course_id → Course; prereq_course_id → Course | Course **M:N** Course (self) | min_grade; rule: course_id != prereq_course_id |
-| CrossListing | crosslist_id | offering_id → CourseOffering; crosslisted_course_id → Course | Offering **M:N** Course | optional: used for cross-listed offerings |
+> PDF-friendly format: this section is intentionally split into smaller tables to avoid page-width cutoffs.
+
+#### Enrollment
+
+| Field | Value |
+|---|---|
+| Captures | Student **M:N** CourseOffering |
+| PK | enrollment_id |
+| FKs | student_uuid → Student<br>offering_id → CourseOffering |
+| Attributes / rules | status (enrolled/waitlisted/dropped)<br>grading_basis, units_taken, enrolled_at, dropped_at, final_grade<br>**Rule:** unique (student_uuid, offering_id) |
+
+#### TeachingAssignment
+
+| Field | Value |
+|---|---|
+| Captures | Instructor **M:N** CourseOffering |
+| PK | teaching_assignment_id |
+| FKs | instructor_uuid → Instructor<br>offering_id → CourseOffering |
+| Attributes / rules | role (instructor_of_record/co-instructor/TA)<br>percent_responsibility |
+
+#### CoursePrerequisite
+
+| Field | Value |
+|---|---|
+| Captures | Course **M:N** Course (self-relationship) |
+| PK | prereq_id |
+| FKs | course_id → Course<br>prereq_course_id → Course |
+| Attributes / rules | min_grade<br>**Rule:** course_id != prereq_course_id |
+
+#### CrossListing
+
+| Field | Value |
+|---|---|
+| Captures | Offering **M:N** Course *(cross-listed offerings)* |
+| PK | crosslist_id |
+| FKs | offering_id → CourseOffering<br>crosslisted_course_id → Course |
+| Attributes / rules | optional entity used when an offering is listed under multiple catalog courses |
 
 ### 1.4 Multivalued attribute entities (examples)
 
