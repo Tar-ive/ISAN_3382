@@ -157,63 +157,41 @@ Business rule: one active enrollment per (student, offering).
 
 ### 2.1 Conceptual Model (high-level ER view)
 
-**Entities:** Department, Course, Term, CourseOffering, Meeting, Classroom, Student, Instructor.
-
-**Key Relationships (with cardinalities):**
-- Department **1** — **N** Course
-- Course **1** — **N** CourseOffering
-- Term **1** — **N** CourseOffering
-- CourseOffering **1** — **N** Meeting
-- Classroom **1** — **N** Meeting (optional on Meeting for online)
-- Student **M** — **N** CourseOffering (via Enrollment)
-- Instructor **M** — **N** CourseOffering (via TeachingAssignment)
-- Course **M** — **N** Course (via CoursePrerequisite, self-relationship)
-- CourseOffering **M** — **N** Course (via CrossListing, optional)
-
-**Attribute types explicitly used:**
-- Composite: Student.legal_name, Instructor.name
-- Multivalued: emails/phones (modeled as separate entities)
-- Derived: Student.age, CourseOffering.enrolled_count/waitlist_count
+| Item | Details |
+|---|---|
+| Entities | Department, Course, Term, CourseOffering, Meeting, Classroom, Student, Instructor |
+| Key Relationships (cardinalities) | Department **1**—**N** Course; Course **1**—**N** CourseOffering; Term **1**—**N** CourseOffering; CourseOffering **1**—**N** Meeting; Classroom **1**—**N** Meeting *(room optional for online)*; Student **M**—**N** CourseOffering *(via Enrollment)*; Instructor **M**—**N** CourseOffering *(via TeachingAssignment)*; Course **M**—**N** Course *(via CoursePrerequisite)*; CourseOffering **M**—**N** Course *(via CrossListing, optional)* |
+| Attribute types used | **Composite:** Student.legal_name, Instructor.name; **Multivalued:** emails/phones *(modeled as separate entities)*; **Derived:** Student.age, CourseOffering.enrolled_count/waitlist_count |
 
 ### 2.2 Logical Model (relational design)
 
-Tables (PK → primary key, FK → foreign key):
-- Department(department_id PK, code UNIQUE, ...)
-- Course(course_id PK, department_id FK, subject_code, catalog_number, ...)
-  - UNIQUE(subject_code, catalog_number) (optionally scoped by catalog_year)
-- Term(term_id PK, ...)
-- CourseOffering(offering_id PK, course_id FK, term_id FK, class_number UNIQUE, ...)
-- Classroom(room_id PK, ...)
-- Meeting(meeting_id PK, offering_id FK, room_id FK NULL, ...)
-- Student(student_uuid PK, student_id_number UNIQUE, sunet_id UNIQUE, ...)
-- Instructor(instructor_uuid PK, sunet_id UNIQUE, ...)
-- Enrollment(enrollment_id PK, student_uuid FK, offering_id FK, ...)
-  - UNIQUE(student_uuid, offering_id) for “one record per student per offering”
-- TeachingAssignment(teaching_assignment_id PK, instructor_uuid FK, offering_id FK, ...)
-  - UNIQUE(instructor_uuid, offering_id, role) recommended
-- CoursePrerequisite(prereq_id PK, course_id FK, prereq_course_id FK, ...)
-  - prevent (course_id = prereq_course_id)
-- CrossListing(crosslist_id PK, offering_id FK, crosslisted_course_id FK, ...)
-- StudentEmail(student_email_id PK, student_uuid FK, ...)
-- StudentPhone(student_phone_id PK, student_uuid FK, ...)
-- InstructorEmail(instructor_email_id PK, instructor_uuid FK, ...)
-
-**M:N relationships are resolved** using associative entities:
-- Student↔Offering via Enrollment
-- Instructor↔Offering via TeachingAssignment
+| Table | Primary Key | Foreign Keys | Key constraints / notes |
+|---|---|---|---|
+| Department | department_id | — | code **UNIQUE** |
+| Course | course_id | department_id → Department | (subject_code, catalog_number) **UNIQUE** *(optionally scoped by catalog_year)* |
+| Term | term_id | — | — |
+| CourseOffering | offering_id | course_id → Course; term_id → Term | class_number **UNIQUE** |
+| Classroom | room_id | — | — |
+| Meeting | meeting_id | offering_id → CourseOffering; room_id → Classroom *(NULL allowed)* | supports multiple meetings per offering |
+| Student | student_uuid | admit_term_id → Term *(optional)* | student_id_number **UNIQUE**; sunet_id **UNIQUE** |
+| Instructor | instructor_uuid | — | sunet_id **UNIQUE** |
+| Enrollment | enrollment_id | student_uuid → Student; offering_id → CourseOffering | (student_uuid, offering_id) **UNIQUE** *(one record per student per offering)* |
+| TeachingAssignment | teaching_assignment_id | instructor_uuid → Instructor; offering_id → CourseOffering | (instructor_uuid, offering_id, role) **UNIQUE** *(recommended)* |
+| CoursePrerequisite | prereq_id | course_id → Course; prereq_course_id → Course | prevent course_id = prereq_course_id |
+| CrossListing | crosslist_id | offering_id → CourseOffering; crosslisted_course_id → Course | optional cross-listing |
+| StudentEmail | student_email_id | student_uuid → Student | multivalued attribute table |
+| StudentPhone | student_phone_id | student_uuid → Student | multivalued attribute table |
+| InstructorEmail | instructor_email_id | instructor_uuid → Instructor | multivalued attribute table |
 
 ### 2.3 Physical Model (implementation-oriented decisions; no DDL requested)
 
-If implemented in a production university environment:
-- Use **UUID** (student_uuid/instructor_uuid) as immutable PKs (safe for merges, privacy).
-- Enforce **unique constraints** on:
-  - Student.student_id_number
-  - Student.sunet_id
-  - Instructor.sunet_id
-  - CourseOffering.class_number
-- Add **indexes** on all FKs (student_uuid, offering_id, course_id, term_id, department_id).
-- Use **soft-delete/status fields** for Enrollment (dropped vs deleted) to preserve auditability.
-- Derived attributes (age, enrolled_count) should be **computed** (views/materialized views) rather than stored, unless performance needs justify caching.
+| Concern | Recommendation | Why |
+|---|---|---|
+| Primary keys | Use immutable **UUIDs** for Student/Instructor PKs | safer merges, privacy-friendly, avoids exposing ID numbers |
+| Alternate identifiers | Enforce **UNIQUE** on Student.student_id_number, Student.sunet_id, Instructor.sunet_id, CourseOffering.class_number | matches registrar/campus identity patterns |
+| Indexing | Index all FKs (student_uuid, offering_id, course_id, term_id, department_id) | improves joins and common queries |
+| Enrollment lifecycle | Use status/soft-delete fields (enrolled/waitlisted/dropped) instead of deleting rows | auditability + transcript integrity |
+| Derived fields | Compute age, enrolled_count, waitlist_count via views/materialized views (cache only if needed) | avoids inconsistency and stale counts |
 
 ---
 
