@@ -1,11 +1,4 @@
-# University Course Management System — ERD (Stanford-style)
-
-> Deliverable: Comprehensive ER diagram + conceptual/logical/physical modeling notes.
->
-> Notes on “Stanford-style” assumptions used here:
-> - People have **SUNet IDs** (campus login) and a separate **Student ID Number** (e.g., 8–10 digit) and/or internal **UUID**.
-> - Courses have a stable catalog identity (**Course**) and are offered each term as **Course Offerings / Sections**.
-> - Real-world needs include cross-listing, multiple instructors per offering, waitlists, and prerequisites.
+# University Course Management System — ERD
 
 ---
 
@@ -135,7 +128,6 @@ Business rule: one active enrollment per (student, offering).
 - min_grade (optional)
 
 #### CrossListing
-(Optional, if you want Stanford-like cross-listed courses)
 - **crosslist_id (PK)**
 - offering_id (FK → CourseOffering)
 - crosslisted_course_id (FK → Course)
@@ -213,7 +205,7 @@ Tables (PK → primary key, FK → foreign key):
 
 ### 2.3 Physical Model (implementation-oriented decisions; no DDL requested)
 
-If implemented in a production university environment (typical Stanford-like constraints):
+If implemented in a production university environment:
 - Use **UUID** (student_uuid/instructor_uuid) as immutable PKs (safe for merges, privacy).
 - Enforce **unique constraints** on:
   - Student.student_id_number
@@ -226,10 +218,7 @@ If implemented in a production university environment (typical Stanford-like con
 
 ---
 
-## 3) ER Diagrams (Mermaid) — split to compile cleanly
-
-The Mermaid skill you added recommends keeping diagrams readable (≤15 entities). So the ERD is split into focused views. Each diagram compiles in GitHub Mermaid.
-
+## 3) ER Diagrams
 ### 3.1 Core Catalog & Scheduling (Department → Course → Offering → Meetings)
 
 ```mermaid
@@ -296,6 +285,7 @@ erDiagram
         string end_time
     }
 ```
+---
 
 ### 3.2 Student Enrollment (Student ↔ Offering)
 
@@ -340,6 +330,8 @@ erDiagram
     }
 ```
 
+---
+
 ### 3.3 Teaching Assignments (Instructor ↔ Offering)
 
 ```mermaid
@@ -372,6 +364,8 @@ erDiagram
         float percent_responsibility
     }
 ```
+
+---
 
 ### 3.4 Curriculum Rules (Prerequisites + Cross-Listing)
 
@@ -411,6 +405,8 @@ erDiagram
         int crosslisted_course_id FK
     }
 ```
+
+---
 
 ### 3.5 Multivalued Contact Attributes (modeled as entities)
 
@@ -454,10 +450,3 @@ erDiagram
 ```
 
 ---
-
-## Quick checks vs requirements
-
-- **Entities + Attributes identified** (incl. derived + multivalued + composite) ✅
-- **Conceptual + Logical + Physical models** included (no SQL schema as requested) ✅
-- **ER diagrams** provided in Mermaid and split for reliable GitHub rendering ✅
-
