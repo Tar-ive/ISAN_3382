@@ -30,8 +30,6 @@ Legend:
 
 ### 1.3 Relationship / associative entities (M:N resolution)
 
-> PDF-friendly format: this section is intentionally split into smaller tables to avoid page-width cutoffs.
-
 #### Enrollment
 
 | Field | Value |
