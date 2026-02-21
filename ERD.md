@@ -7,149 +7,43 @@ Legend:
 - **PK** = Primary Key
 - **AK** = Alternate Key / Unique Identifier
 - **(C)** = Composite attribute
-- **(M)** = Multivalued attribute (modeled as separate entity/table)
+- **(M)** = Multivalued attribute *(modeled as separate entity/table)*
 - **(D)** = Derived attribute
 
-### Core academic structure
+### 1.1 Core academic structure
 
-#### Department
-- **department_id (PK)**
-- code (AK) — e.g., CS, MATH
-- name
-- chair_instructor_id (FK → Instructor, optional)
+| Entity | Primary Key | Alternate keys / unique IDs | Selected attributes | Notes (C/M/D) |
+|---|---|---|---|---|
+| Department | department_id | code | name, chair_instructor_id (FK) | — |
+| Course (Catalog) | course_id | (subject_code, catalog_number) *(candidate AK)* | department_id (FK), title, description, units_min, units_max, grading_basis_default, level | — |
+| Term | term_id | — | academic_year, quarter, start_date, end_date | — |
+| CourseOffering / Section | offering_id | class_number | course_id (FK), term_id (FK), section_number, capacity, waitlist_capacity, modality, enrolled_count, waitlist_count | enrolled_count **(D)**, waitlist_count **(D)** |
+| Classroom | room_id | (building, room_number) *(candidate)* | capacity | — |
+| Meeting | meeting_id | — | offering_id (FK), room_id (FK, optional), day_of_week, start_time, end_time | room optional for online/hybrid |
 
-#### Course (Catalog Course)
-- **course_id (PK)**
-- department_id (FK → Department)
-- subject_code (AK part) — e.g., CS
-- catalog_number (AK part) — e.g., 106A
-- title
-- description
-- units_min
-- units_max
-- grading_basis_default — e.g., Letter, S/NC
-- level — UG/GR
+### 1.2 People
 
-**Candidate alternate key (AK):** (subject_code, catalog_number) within a catalog year.
+| Entity | Primary Key | Alternate keys / unique IDs | Selected attributes | Notes (C/M/D) |
+|---|---|---|---|---|
+| Student | student_uuid | student_id_number; sunet_id | legal_name, preferred_name, date_of_birth, age, level, admit_term_id (FK, optional), status | legal_name **(C)**; emails/phones **(M)**; age **(D)** |
+| Instructor | instructor_uuid | sunet_id | name, title, office_location | name **(C)**; emails **(M)** |
 
-#### Term
-- **term_id (PK)**
-- academic_year — e.g., 2025–2026
-- quarter — Autumn/Winter/Spring/Summer
-- start_date
-- end_date
+### 1.3 Relationship / associative entities (M:N resolution)
 
-#### CourseOffering / Section
-(An instance of a course taught in a specific term)
-- **offering_id (PK)**
-- course_id (FK → Course)
-- term_id (FK → Term)
-- section_number — e.g., 01
-- class_number (AK) — registrar “Class #”
-- capacity
-- waitlist_capacity
-- modality — in-person/online/hybrid
-- **enrolled_count (D)** — count of active enrollments
-- **waitlist_count (D)** — count of waitlisted enrollments
+| Associative entity | Primary Key | Foreign Keys | Relationship captured | Relationship attributes / notes |
+|---|---|---|---|---|
+| Enrollment | enrollment_id | student_uuid → Student; offering_id → CourseOffering | Student **M:N** CourseOffering | status (enrolled/waitlisted/dropped), grading_basis, units_taken, enrolled_at, dropped_at, final_grade; rule: unique (student_uuid, offering_id) |
+| TeachingAssignment | teaching_assignment_id | instructor_uuid → Instructor; offering_id → CourseOffering | Instructor **M:N** CourseOffering | role (instructor_of_record/co-instructor/TA), percent_responsibility |
+| CoursePrerequisite | prereq_id | course_id → Course; prereq_course_id → Course | Course **M:N** Course (self) | min_grade; rule: course_id != prereq_course_id |
+| CrossListing | crosslist_id | offering_id → CourseOffering; crosslisted_course_id → Course | Offering **M:N** Course | optional: used for cross-listed offerings |
 
-#### Classroom
-- **room_id (PK)**
-- building
-- room_number
-- capacity
+### 1.4 Multivalued attribute entities (examples)
 
-#### Meeting
-(When/where an offering meets; supports multiple meetings per offering)
-- **meeting_id (PK)**
-- offering_id (FK → CourseOffering)
-- room_id (FK → Classroom, optional)
-- day_of_week
-- start_time
-- end_time
-
-### People
-
-#### Student
-- **student_uuid (PK)** — internal unique identifier (immutable)
-- student_id_number (AK) — official student ID
-- sunet_id (AK) — campus login
-- legal_name (C) — {first, middle, last}
-- preferred_name
-- date_of_birth
-- **age (D)** — from date_of_birth
-- level — UG/GR
-- admit_term_id (FK → Term, optional)
-- status — active/leave/graduated
-
-Multivalued attributes (modeled separately):
-- emails (M) → StudentEmail
-- phones (M) → StudentPhone
-
-#### Instructor
-- **instructor_uuid (PK)**
-- sunet_id (AK)
-- name (C) — {first, middle, last}
-- title — Professor/Lecturer/TA/etc.
-- office_location
-
-Multivalued attributes:
-- emails (M) → InstructorEmail
-
-### Relationship-associative entities (resolve M:N and capture attributes)
-
-#### Enrollment
-(Associative entity between Student and CourseOffering)
-- **enrollment_id (PK)**
-- student_uuid (FK → Student)
-- offering_id (FK → CourseOffering)
-- status — enrolled / waitlisted / dropped
-- grading_basis — chosen (may override default)
-- units_taken
-- enrolled_at
-- dropped_at (optional)
-- final_grade (optional)
-
-Business rule: one active enrollment per (student, offering).
-
-#### TeachingAssignment
-(Associative entity between Instructor and CourseOffering)
-- **teaching_assignment_id (PK)**
-- instructor_uuid (FK → Instructor)
-- offering_id (FK → CourseOffering)
-- role — instructor_of_record / co-instructor / TA
-- percent_responsibility (optional)
-
-#### CoursePrerequisite
-(Self-referential relationship on Course)
-- **prereq_id (PK)**
-- course_id (FK → Course) — the course that has prerequisites
-- prereq_course_id (FK → Course) — the required course
-- min_grade (optional)
-
-#### CrossListing
-- **crosslist_id (PK)**
-- offering_id (FK → CourseOffering)
-- crosslisted_course_id (FK → Course)
-
-### Multivalued attribute entities (examples)
-
-#### StudentEmail
-- **student_email_id (PK)**
-- student_uuid (FK → Student)
-- email
-- is_primary
-
-#### StudentPhone
-- **student_phone_id (PK)**
-- student_uuid (FK → Student)
-- phone
-- type — mobile/home/etc.
-
-#### InstructorEmail
-- **instructor_email_id (PK)**
-- instructor_uuid (FK → Instructor)
-- email
-- is_primary
+| Entity (multivalued attribute table) | Primary Key | Foreign Keys | Attributes | Notes |
+|---|---|---|---|---|
+| StudentEmail | student_email_id | student_uuid → Student | email, is_primary | models Student.emails **(M)** |
+| StudentPhone | student_phone_id | student_uuid → Student | phone, type | models Student.phones **(M)** |
+| InstructorEmail | instructor_email_id | instructor_uuid → Instructor | email, is_primary | models Instructor.emails **(M)** |
 
 ---
 
