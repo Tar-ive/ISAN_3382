@@ -226,41 +226,25 @@ If implemented in a production university environment (typical Stanford-like con
 
 ---
 
-## 3) ER Diagram (Mermaid)
+## 3) ER Diagrams (Mermaid) — split to compile cleanly
 
-> Paste into any Mermaid renderer (GitHub supports Mermaid in Markdown).
+The Mermaid skill you added recommends keeping diagrams readable (≤15 entities). So the ERD is split into focused views. Each diagram compiles in GitHub Mermaid.
+
+### 3.1 Core Catalog & Scheduling (Department → Course → Offering → Meetings)
 
 ```mermaid
 erDiagram
     DEPARTMENT ||--o{ COURSE : offers
-    COURSE ||--o{ COURSE_OFFERING : "is offered as"
-    TERM ||--o{ COURSE_OFFERING : schedules
+    COURSE ||--o{ COURSE_OFFERING : offered_as
+    TERM ||--o{ COURSE_OFFERING : occurs_in
 
     COURSE_OFFERING ||--o{ MEETING : has
     CLASSROOM ||--o{ MEETING : hosts
-
-    STUDENT ||--o{ ENROLLMENT : registers
-    COURSE_OFFERING ||--o{ ENROLLMENT : has
-
-    INSTRUCTOR ||--o{ TEACHING_ASSIGNMENT : assigned
-    COURSE_OFFERING ||--o{ TEACHING_ASSIGNMENT : taught_by
-
-    COURSE ||--o{ COURSE_PREREQUISITE : requires
-    COURSE ||--o{ COURSE_PREREQUISITE : "is prerequisite for"
-
-    COURSE_OFFERING ||--o{ CROSS_LISTING : crosslists
-    COURSE ||--o{ CROSS_LISTING : "as catalog course"
-
-    STUDENT ||--o{ STUDENT_EMAIL : has
-    STUDENT ||--o{ STUDENT_PHONE : has
-    INSTRUCTOR ||--o{ INSTRUCTOR_EMAIL : has
-
 
     DEPARTMENT {
         int department_id PK
         string code UK
         string name
-        string chair_instructor_id FK
     }
 
     COURSE {
@@ -280,8 +264,8 @@ erDiagram
         int term_id PK
         string academic_year
         string quarter
-        date start_date
-        date end_date
+        string start_date
+        string end_date
     }
 
     COURSE_OFFERING {
@@ -293,8 +277,7 @@ erDiagram
         int capacity
         int waitlist_capacity
         string modality
-        int enrolled_count DERIVED
-        int waitlist_count DERIVED
+        %% Derived in implementation: enrolled_count, waitlist_count
     }
 
     CLASSROOM {
@@ -309,27 +292,63 @@ erDiagram
         int offering_id FK
         int room_id FK
         string day_of_week
-        time start_time
-        time end_time
+        string start_time
+        string end_time
     }
+```
+
+### 3.2 Student Enrollment (Student ↔ Offering)
+
+```mermaid
+erDiagram
+    STUDENT ||--o{ ENROLLMENT : registers
+    COURSE_OFFERING ||--o{ ENROLLMENT : has
 
     STUDENT {
-        uuid student_uuid PK
+        string student_uuid PK
         string student_id_number UK
         string sunet_id UK
         string legal_first
         string legal_middle
         string legal_last
         string preferred_name
-        date date_of_birth
-        int age DERIVED
+        string date_of_birth
+        %% Derived in implementation: age
         string level
         int admit_term_id FK
         string status
     }
 
+    COURSE_OFFERING {
+        int offering_id PK
+        int course_id FK
+        int term_id FK
+        string section_number
+        string class_number UK
+    }
+
+    ENROLLMENT {
+        int enrollment_id PK
+        string student_uuid FK
+        int offering_id FK
+        string status
+        string grading_basis
+        int units_taken
+        string enrolled_at
+        string dropped_at
+        string final_grade
+    }
+```
+
+### 3.3 Teaching Assignments (Instructor ↔ Offering)
+
+```mermaid
+erDiagram
+    INSTRUCTOR ||--o{ TEACHING_ASSIGNMENT : teaches
+    COURSE_OFFERING ||--o{ TEACHING_ASSIGNMENT : staffed_by
+
     INSTRUCTOR {
-        uuid instructor_uuid PK
+        string instructor_uuid PK
         string sunet_id UK
         string first_name
         string middle_name
@@ -338,24 +357,38 @@ erDiagram
         string office_location
     }
 
-    ENROLLMENT {
-        int enrollment_id PK
-        uuid student_uuid FK
-        int offering_id FK
-        string status
-        string grading_basis
-        int units_taken
-        datetime enrolled_at
-        datetime dropped_at
-        string final_grade
+    COURSE_OFFERING {
+        int offering_id PK
+        int course_id FK
+        int term_id FK
+        string class_number UK
     }
 
     TEACHING_ASSIGNMENT {
         int teaching_assignment_id PK
-        uuid instructor_uuid FK
+        string instructor_uuid FK
         int offering_id FK
         string role
         float percent_responsibility
+    }
+```
+
+### 3.4 Curriculum Rules (Prerequisites + Cross-Listing)
+
+```mermaid
+erDiagram
+    COURSE ||--o{ COURSE_PREREQUISITE : has
+    COURSE ||--o{ COURSE_PREREQUISITE : is_required
+
+    COURSE_OFFERING ||--o{ CROSS_LISTING : crosslists
+    COURSE ||--o{ CROSS_LISTING : listed_as
+
+    COURSE {
+        int course_id PK
+        int department_id FK
+        string subject_code
+        string catalog_number
+        string title
     }
 
     COURSE_PREREQUISITE {
@@ -365,29 +398,56 @@ erDiagram
         string min_grade
     }
 
+    COURSE_OFFERING {
+        int offering_id PK
+        int course_id FK
+        int term_id FK
+        string class_number UK
+    }
+
     CROSS_LISTING {
         int crosslist_id PK
         int offering_id FK
         int crosslisted_course_id FK
     }
+```
+
+### 3.5 Multivalued Contact Attributes (modeled as entities)
+
+```mermaid
+erDiagram
+    STUDENT ||--o{ STUDENT_EMAIL : has
+    STUDENT ||--o{ STUDENT_PHONE : has
+    INSTRUCTOR ||--o{ INSTRUCTOR_EMAIL : has
+
+    STUDENT {
+        string student_uuid PK
+        string student_id_number UK
+        string sunet_id UK
+    }
+
+    INSTRUCTOR {
+        string instructor_uuid PK
+        string sunet_id UK
+    }
 
     STUDENT_EMAIL {
         int student_email_id PK
-        uuid student_uuid FK
+        string student_uuid FK
         string email
         boolean is_primary
     }
 
     STUDENT_PHONE {
         int student_phone_id PK
-        uuid student_uuid FK
+        string student_uuid FK
         string phone
         string type
     }
 
     INSTRUCTOR_EMAIL {
         int instructor_email_id PK
-        uuid instructor_uuid FK
+        string instructor_uuid FK
         string email
         boolean is_primary
     }
@@ -399,5 +459,5 @@ erDiagram
 
 - **Entities + Attributes identified** (incl. derived + multivalued + composite) ✅
 - **Conceptual + Logical + Physical models** included (no SQL schema as requested) ✅
-- **ER diagram** provided in Mermaid, GitHub-renderable ✅
+- **ER diagrams** provided in Mermaid and split for reliable GitHub rendering ✅
 
