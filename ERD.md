@@ -1,4 +1,4 @@
-# University Course Management System — ERD (Revised to match scenario naming)
+# University Course Management System — ERD
 ---
 
 ## 1) Entities & Attributes (with attribute types)
