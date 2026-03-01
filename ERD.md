@@ -1,8 +1,4 @@
 # University Course Management System — ERD (Revised to match scenario naming)
-
-This revision intentionally **sticks to the scenario’s core nouns** and uses simple, literal relation names:
-**DEPARTMENT, COURSE, STUDENT, INSTRUCTOR, ENROLLMENT** (plus small helper relations to model multivalued/derived attributes).
-
 ---
 
 ## 1) Entities & Attributes (with attribute types)
@@ -326,8 +322,6 @@ Legend:
 ---
 
 ## 3) ER Diagram (Mermaid)
-
-> Note: Mermaid doesn’t “draw” composite/derived attributes directly; this ERD represents them using columns and helper relations for multivalued attributes.
 
 ```mermaid
 erDiagram
